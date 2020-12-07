@@ -1,0 +1,298 @@
+# Sesión 07
+# Proyecto
+# 28 de Noviembre de 2020
+# Realizó: 
+# Fabiola Rasgado
+
+
+## Reto 01: Starbucks
+## Usando la latitud y longitud de tu posición actual, encuenta el Starbucks 
+## más cercano a tu posición. Para conocer tu posición actual puedes usar Google 
+## Maps para, sólo debes copiar los datos de la URL.
+## Los datos que sirvieron de busqueda son:
+### Latitud  19.457177, 
+### longitud -99.213730
+
+### Aggregations code
+[{
+    $match: {
+        $and: [{
+                Latitude: {
+                    $gte: 19.44
+                }
+            },
+            {
+                Longitude: {
+                    $gte: -99.2
+                }
+            },
+            {
+                Latitude: {
+                    $lte: 19.44
+                }
+            },
+            {
+                Longitude: {
+                    $lte: -99.2
+                }
+            }
+
+        ]
+
+    }
+}]
+
+
+## Reto 02: Pandemia A (H1N1)
+## Agregations code
+### ¿Cuál fue el país con mayor número de muertes?
+[{
+    $match: {
+        Country: {
+            $not: /Grand Total/
+        }
+    }
+}, {
+    $sort: {
+        Deaths: -1
+    }
+}, {
+    $limit: 1
+}]
+
+### ¿Cuál fue el país con menor número de muertes?
+[{
+    $match: {
+        Country: {
+            $not: /Grand Total/
+        }
+    }
+}, {
+    $sort: {
+        Deaths: 1
+    }
+}, {
+    $limit: 1
+}]
+
+### ¿Cuál fue el país con el mayor número de casos?
+[{
+    $match: {
+        Country: {
+            $not: /Grand Total/
+        }
+    }
+}, {
+    $sort: {
+        Cases: -1
+    }
+}, {
+    $limit: 1
+}]
+
+### ¿Cuál fue el país con el menor número de casos?
+[{
+    $match: {
+        Country: {
+            $not: /Grand Total/
+        }
+    }
+}, {
+    $sort: {
+        Cases: 1
+    }
+}, {
+    $limit: 1
+}]
+
+### ¿Cuál fue el número de muertes promedio?
+[{$match: 
+{ 
+  Country: { $not: /Grand Total/},
+  Deaths: { $ne: NaN}
+}}, {$group: {
+  _id : 1,
+  avg: { $avg: "$Deaths"} 
+}}, {$project: {
+  promedioMuertes: { $round : ["$avg", 0] }
+}}]
+
+### ¿Cuál fue el número de casos promedio?
+[{$match: 
+{ 
+  Country: { $not: /Grand Total/},
+  Cases: { $ne: NaN}
+}}, {$group: {
+  _id : 1,
+  avg: { $avg: "$Cases"} 
+}}, {$project: {
+  promedioCasos: { $round : ["$avg", 0] }
+}}]
+
+### Top 5 de países con más muertes
+[{$match: 
+{ 
+  Country: { $not: /Grand Total/} 
+}}, {$group: {
+  _id: "$Country",
+  sumaDeaths: {
+    $sum: "$Deaths"
+  }
+}}, {$sort: {
+  sumaDeaths: -1
+}}, {$limit: 5}]
+
+### Top 5 de países con menos muertes
+[{$match: 
+{ 
+  Country: { $not: /Grand Total/},
+  Deaths: { $ne: NaN}
+}}, {$group: {
+  _id: "$Country",
+  sumaDeaths: {
+    $sum: "$Deaths"
+  }
+}}, {$sort: {
+  sumaDeaths: 1
+}}, {$limit: 5}]
+
+
+## Reto 03: Pandemia A (H1N1)
+## <i>Agregations code</i>
+
+### Pregunta No. 01
+### ¿Cuál es país con mayor número de casos?
+
+- [Alternativa 1]
+[{
+    $sort: {
+        Confirmed: -1
+    }
+}, {
+    $limit: 1
+}, {
+    $project: {
+        _id: 0,
+        Region: 1,
+        Confirmed: 1
+    }
+}]
+
+- [Alternativa 2]
+[{$group: {
+  _id: "$Region",
+  MaxCasosporPais: {
+    $max: "$Confirmed"
+  }
+}}, {$sort: {
+  MaxCasosporPais: -1
+}}, {$limit: 1}]
+
+### Pregunta No. 02
+### ¿Cuál es el país con mayor número de muertes?
+- [Alternativa 1]
+[{$sort: {
+  Deaths: -1
+}}, {$limit: 1}, {$project: {
+  _id: 0,
+  Region: 1,
+  Deaths: 1
+}}]
+
+
+- [Alternativa 2]
+[{$group: {
+  _id: "$Region",
+  MaxDeathsbyCountry: {
+    $max: "$Deaths"
+  }
+}}, {$sort: {
+  MaxDeathsbyCountry: -1
+}}, {$limit: 1}]
+
+### Pregunta No. 03
+### Usando las coordenadas, encuentra el epicentro del virus.
+### Notas: 
+### Codigo Pipeline utilizado cuando los atributos "Lat" y "Long" son del tipo de dato Double. 
+### Sin agrupar por Región
+
+[{$match: {
+  Lat: { $ne: NaN},
+  Long: { $ne: NaN}
+}}, {$group: {
+  _id: null,
+  size: {
+    $sum: 1
+  }, 
+  sumLat: {
+    $sum: "$Lat"
+  },
+  sumLong: {
+    $sum: "$Long"
+  },
+  avgLat: {
+    $avg: "$Lat"
+  },
+  avgLong: {
+    $avg: "$Long"
+  }
+}}, {$project: {
+  checkAvgLat: {
+    $divide: ["$sumLat", "$size"]
+  },
+  checkAvgLong: {
+    $divide: ["$sumLong", "$size"]
+  }
+}}]
+
+
+
+### Pregunta No. 04
+### Usando el epicentro, encuentra las 5 regiones más cercanas a dicho epicentro.
+### Los datos del epicentro utilizado son:
+### Latitud:31.709998321342923
+### Longitud:29.72109808153477
+
+### Se hallaron las siguientes regiones:
+### Jordan, Israel, Lebanon, Egypt, Greece
+
+[{$match: {
+  Lat: { $ne: 0},
+  Long: { $ne: 0},
+  Long: { $gt: 0}
+}}, {$addFields: {
+  Latitud: 31.709998321342923,
+  Longitud: 29.72109808153477
+}}, {$addFields: {
+ diferenciaLat: {$abs: {$subtract: ["$Latitud", "$Lat"]}},
+  diferenciaLong: {$abs: {$subtract: ["$Longitud", "$Long"]}}
+
+  }}, {$group: {
+  _id: "$Region",
+  LatitudDifMasCercana: {
+    $max: "$diferenciaLat"
+  },
+  LongitudDifMasCercana: {
+    $min: "$diferenciaLong"
+  }, 
+  Lat: {
+    $max: "$Lat"
+  },
+  Long: {
+    $min: "$Long"
+  }
+}}, {$match: 
+{
+  LongitudDifMasCercana: { $lte: 8 }
+}}, {$sort: {
+  LatitudDifMasCercana: 1,
+  LongitudDifMasCercana: 1
+}}, {$project: {
+  Region:1,
+  EpicentroLatitud: "31.709998321342923",
+  EpicentroLongitud: "29.72109808153477", 
+  LatitudDifMasCercana: 1,
+  Lat: 1,
+  LongitudDifMasCercana: 1,
+  Long: 1
+}}, {$limit: 5}]
